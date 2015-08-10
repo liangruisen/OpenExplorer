@@ -52,9 +52,9 @@ import org.eclipse.ui.PlatformUI;
  * @version 1.4.0
  */
 public abstract class AbstractOpenExplorerAction implements IActionDelegate,
-        IPropertyChangeListener {
+		IPropertyChangeListener {
 	protected IWorkbenchWindow window = PlatformUI.getWorkbench()
-	        .getActiveWorkbenchWindow();
+			.getActiveWorkbenchWindow();
 	protected Shell shell;
 	protected ISelection currentSelection;
 
@@ -63,7 +63,7 @@ public abstract class AbstractOpenExplorerAction implements IActionDelegate,
 	public AbstractOpenExplorerAction() {
 		this.systemBrowser = OperatingSystem.INSTANCE.getSystemBrowser();
 		Activator.getDefault().getPreferenceStore()
-		        .addPropertyChangeListener(this);
+				.addPropertyChangeListener(this);
 	}
 
 	/*
@@ -85,44 +85,53 @@ public abstract class AbstractOpenExplorerAction implements IActionDelegate,
 		}
 		if (this.currentSelection instanceof ITreeSelection) {
 			ITreeSelection treeSelection = (ITreeSelection) this.currentSelection;
-
 			TreePath[] paths = treeSelection.getPaths();
-
 			for (int i = 0; i < paths.length; i++) {
 				TreePath path = paths[i];
 				IResource resource = null;
+				String location = null;
+				String browser = this.systemBrowser;
 				Object segment = path.getLastSegment();
 				if ((segment instanceof IResource))
 					resource = (IResource) segment;
 				else if ((segment instanceof IJavaElement)) {
 					resource = ((IJavaElement) segment).getResource();
+					if (resource == null) {
+						location = ((IJavaElement) segment).getPath().toOSString();
+						if (location != null) {
+							if (OperatingSystem.INSTANCE.isWindows()) {
+								browser = this.systemBrowser + " /select,";
+							}
+							openInBrowser(browser, location);
+							continue;
+						}
+					}
 				}
 				if (resource == null) {
 					continue;
 				}
-				String browser = this.systemBrowser;
-				String location = resource.getLocation().toOSString();
+				location = resource.getLocation().toOSString();
 				if ((resource instanceof IFile)) {
 					location = ((IFile) resource).getParent().getLocation()
-					        .toOSString();
+							.toOSString();
 					if (OperatingSystem.INSTANCE.isWindows()) {
 						browser = this.systemBrowser + " /select,";
 						location = ((IFile) resource).getLocation()
-						        .toOSString();
+								.toOSString();
 					}
 				}
 				openInBrowser(browser, location);
 			}
 		} else if (this.currentSelection instanceof ITextSelection
-		        || this.currentSelection instanceof IStructuredSelection) {
+				|| this.currentSelection instanceof IStructuredSelection) {
 			// open current editing file
 			IEditorPart editor = window.getActivePage().getActiveEditor();
 			if (editor != null) {
 				IFile current_editing_file = (IFile) editor.getEditorInput()
-				        .getAdapter(IFile.class);
+						.getAdapter(IFile.class);
 				String browser = this.systemBrowser;
 				String location = current_editing_file.getParent()
-				        .getLocation().toOSString();
+						.getLocation().toOSString();
 				if (OperatingSystem.INSTANCE.isWindows()) {
 					browser = this.systemBrowser + " /select,";
 					location = current_editing_file.getLocation().toOSString();
@@ -141,7 +150,7 @@ public abstract class AbstractOpenExplorerAction implements IActionDelegate,
 			}
 		} catch (IOException e) {
 			MessageDialog.openError(shell, Messages.OpenExploer_Error,
-			        Messages.Cant_Open + " \"" + location + "\"");
+					Messages.Cant_Open + " \"" + location + "\"");
 			e.printStackTrace();
 		}
 	}
